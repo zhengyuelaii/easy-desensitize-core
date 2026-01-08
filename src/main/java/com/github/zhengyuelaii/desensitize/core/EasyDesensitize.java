@@ -1,4 +1,4 @@
-package com.github.zhengyuelaii.desensitize.core.util;
+package com.github.zhengyuelaii.desensitize.core;
 
 import java.lang.reflect.Field;
 import java.util.Collection;
@@ -11,13 +11,13 @@ import java.util.Objects;
 import com.github.zhengyuelaii.desensitize.core.annotation.MaskingField;
 import com.github.zhengyuelaii.desensitize.core.handler.MaskingHandler;
 
-public class MaskingUtil {
+public class EasyDesensitize {
 
-	public static void execute(Object data) {
-		execute(data, null);
+	public static void mask(Object data) {
+		mask(data, null);
 	}
 
-	public static void execute(Object data, Map<String, MaskingHandler> handlerMap) {
+	public static void mask(Object data, Map<String, MaskingHandler> handlerMap) {
 		if (data == null)
 			return;
 
