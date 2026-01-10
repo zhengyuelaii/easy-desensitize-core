@@ -1,6 +1,6 @@
 package com.github.zhengyuelaii.desensitize.core.util;
 
-public class Maker {
+public class Masker {
 
 	public static String hide(CharSequence str, int startInclude, int endExclude) {
 		if (str == null || str.length() == 0) {

@@ -32,7 +32,7 @@ public class NameMaskingTest {
 
 		@Override
 		public String getMaskingValue(String value) {
-			return Maker.hide(value, 1, value.length() - 1);
+			return Masker.hide(value, 1, value.length() - 1);
 		}
 
 	}

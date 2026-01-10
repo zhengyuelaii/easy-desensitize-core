@@ -31,7 +31,7 @@ public class BeanMaskingTest {
 		public String getMaskingValue(String value) {
 			if (value == null)
 				return null;
-			return Maker.hide(value, 1, value.length() - 1);
+			return Masker.hide(value, 1, value.length() - 1);
 		}
 
 	}
@@ -42,7 +42,7 @@ public class BeanMaskingTest {
 		public String getMaskingValue(String value) {
 			if (value == null)
 				return null;
-			return Maker.hide(value, 3, 7);
+			return Masker.hide(value, 3, 7);
 		}
 
 	}
