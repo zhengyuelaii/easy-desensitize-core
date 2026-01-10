@@ -6,6 +6,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import com.github.zhengyuelaii.desensitize.core.handler.DefaultMaskingHandler;
 import com.github.zhengyuelaii.desensitize.core.handler.MaskingHandler;
 
 @Documented
@@ -13,8 +14,6 @@ import com.github.zhengyuelaii.desensitize.core.handler.MaskingHandler;
 @Target({ ElementType.FIELD })
 public @interface MaskingField {
 
-	String name() default "";
-
-	Class<? extends MaskingHandler> typeHandler();
+	Class<? extends MaskingHandler> typeHandler() default DefaultMaskingHandler.class;
 
 }

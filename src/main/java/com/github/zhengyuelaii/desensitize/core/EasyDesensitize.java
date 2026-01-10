@@ -1,15 +1,14 @@
 package com.github.zhengyuelaii.desensitize.core;
 
-import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Objects;
 
-import com.github.zhengyuelaii.desensitize.core.annotation.MaskingField;
 import com.github.zhengyuelaii.desensitize.core.handler.MaskingHandler;
+import com.github.zhengyuelaii.desensitize.core.util.ClassAnalyzer;
+import com.github.zhengyuelaii.desensitize.core.util.FieldMeta;
 
 public class EasyDesensitize {
 
@@ -18,92 +17,95 @@ public class EasyDesensitize {
 	}
 
 	public static void mask(Object data, Map<String, MaskingHandler> handlerMap) {
-		if (data == null)
+		mask(data, handlerMap, null);
+	}
+
+	public static void mask(Object data, Map<String, MaskingHandler> handlerMap,
+			Map<Class<?>, List<FieldMeta>> classCache) {
+		if (data == null) {
 			return;
+		}
+		if (classCache == null) {
+			// 初始化Bean结构缓存
+			classCache = new HashMap<>();
+		}
 
+		// 执行脱敏
 		if (data instanceof Iterator) {
-			maskIterator((Iterator<?>) data, handlerMap);
+			maskIterator((Iterator<?>) data, handlerMap, classCache);
 		} else if (data instanceof Collection) {
-			Iterator<?> it = ((Collection<?>) data).iterator();
-			maskIterator(it, handlerMap);
+			maskIterator(((Collection<?>) data).iterator(), handlerMap, classCache);
 		} else if (data instanceof Map) {
-			maskMap((Map<String, Object>) data, handlerMap);
+			maskMap((Map<?, Object>) data, handlerMap, classCache);
 		} else {
-			maskBean(data, handlerMap);
+			maskBean(data, handlerMap, classCache);
 		}
 	}
 
-	public static void maskIterator(Iterator<?> iterator, Map<String, MaskingHandler> hendlerMap) {
+	private static void maskIterator(Iterator<?> iterator, Map<String, MaskingHandler> hendlerMap,
+			Map<Class<?>, List<FieldMeta>> classCache) {
 		while (iterator.hasNext()) {
-			Object data = iterator.next();
-			if (data instanceof Map) {
-				maskMap((Map<String, Object>) data, hendlerMap);
+			mask(iterator.next(), hendlerMap, classCache);
+		}
+	}
+
+	private static void maskMap(Map<?, Object> data, Map<String, MaskingHandler> handlerMap,
+			Map<Class<?>, List<FieldMeta>> classCache) {
+		for (Map.Entry<?, Object> entry : data.entrySet()) {
+			Object key = entry.getKey();
+
+			// 核心拦截逻辑
+			if (key != null && !(key instanceof String)) {
+				throw new RuntimeException(String.format(
+						"Unsupported Map Key type: The desensitization engine requires Map keys to be of type java.lang.String, but found [%s] with value [%s].",
+						key.getClass().getName(), key));
+			}
+
+			Object value = entry.getValue();
+			if (value == null)
+				continue;
+
+			String keyStr = (String) key;
+
+			// 逻辑：命中配置则脱敏，未命中则递归探测 Value 内部
+			if (handlerMap != null && handlerMap.containsKey(keyStr)) {
+				if (value instanceof String) {
+					String maskedValue = handlerMap.get(keyStr).getMaskingValue((String) value);
+					((Map<Object, Object>) data).put(key, maskedValue);
+				} else {
+					mask(value, handlerMap, classCache);
+				}
 			} else {
-				maskBean(data, hendlerMap);
+				// 即使 Key 没匹配上，Value 本身可能是一个包含 @MaskingField 的 Bean
+				mask(value, handlerMap, classCache);
 			}
 		}
 	}
 
-	public static void maskMap(Map<String, Object> data, Map<String, MaskingHandler> handlerMap) {
-		for (Entry<String, MaskingHandler> entry : handlerMap.entrySet()) {
-			if (data.containsKey(entry.getKey())) {
-				String value = data.get(entry.getKey()) == null ? null : data.get(entry.getKey()).toString();
-				if (null != value && !"".equals(value)) {
-					value = entry.getValue().getMaskingValue(value);
-					data.put(entry.getKey(), value);
-				}
-			}
-		}
-	}
+	private static void maskBean(Object data, Map<String, MaskingHandler> handlerMap,
+			Map<Class<?>, List<FieldMeta>> classCache) {
+		Class<?> clazz = data.getClass();
+		// 从缓存获取该类的脱敏元数据
+		List<FieldMeta> metas = classCache.computeIfAbsent(clazz, k -> ClassAnalyzer.analyze(k, handlerMap));
 
-	public static void maskBean(Object data, Map<String, MaskingHandler> handlerMap) {
-		Class<? extends Object> clazz = data.getClass();
-		Field[] fields = clazz.getDeclaredFields();
-		for (Field f : fields) {
-			MaskingField anno = f.getAnnotation(MaskingField.class);
-			if (null != anno) {
-				try {
-					MaskingHandler handler = anno.typeHandler().newInstance();
-					f.setAccessible(true);
-					String value = f.get(data) == null ? null : f.get(data).toString();
-					if (!"".equals(value)) {
-						value = handler.getMaskingValue(value);
-						f.set(data, value);
-					}
-				} catch (InstantiationException | IllegalAccessException e) {
-					throwSneaky(e);
-				}
-			}
-		}
-	}
-
-	private static Map<String, MaskingHandler> getBeanMaskingHandler(Class<?> clazz) {
-		Map<String, MaskingHandler> handlerMap = new HashMap<>();
-		if (clazz != null) {
-			// 递归获取当前类及其父类的所有字段
+		for (FieldMeta meta : metas) {
 			try {
-				processClassFields(clazz, handlerMap);
-			} catch (InstantiationException | IllegalAccessException e) {
+				Object value = meta.getField().get(data);
+				if (value == null) {
+					continue;
+				}
+				if (meta.isNested()) {
+					// 如果是嵌套对象或集合，递归处理
+					mask(value, handlerMap, classCache);
+				} else {
+					// 执行脱敏逻辑
+					String maskedValue = meta.getTypeHandler().getMaskingValue((String) value);
+					meta.getField().set(data, maskedValue);
+				}
+			} catch (IllegalArgumentException | IllegalAccessException e) {
 				throwSneaky(e);
 			}
 		}
-		return handlerMap;
-	}
-
-	private static void processClassFields(Class<?> clazz, Map<String, MaskingHandler> handlerMap)
-			throws InstantiationException, IllegalAccessException {
-		if (clazz == null || clazz.equals(Objects.class)) {
-			return;
-		}
-		Field[] fields = clazz.getDeclaredFields();
-		for (Field f : fields) {
-			MaskingField anno = f.getAnnotation(MaskingField.class);
-			if (null != anno) {
-				MaskingHandler handler = anno.typeHandler().newInstance();
-				handlerMap.put(f.getName(), handler);
-			}
-		}
-		processClassFields(clazz.getSuperclass(), handlerMap);
 	}
 
 	@SuppressWarnings("unchecked")
