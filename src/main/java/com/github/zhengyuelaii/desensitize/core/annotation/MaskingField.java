@@ -13,7 +13,19 @@ import com.github.zhengyuelaii.desensitize.core.handler.MaskingHandler;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.FIELD })
 public @interface MaskingField {
+	
+	/**
+	 * 脱敏字段名（JavaBean情况下无需设置此字段）
+	 * 
+	 * @return
+	 */
+	String name() default "";
 
+	/**
+	 * 脱敏处理器
+	 * 
+	 * @return
+	 */
 	Class<? extends MaskingHandler> typeHandler() default DefaultMaskingHandler.class;
 
 }
