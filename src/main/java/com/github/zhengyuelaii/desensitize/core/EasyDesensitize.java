@@ -1,56 +1,77 @@
 package com.github.zhengyuelaii.desensitize.core;
 
+import java.lang.ref.SoftReference;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.github.zhengyuelaii.desensitize.core.handler.MaskingHandler;
 import com.github.zhengyuelaii.desensitize.core.util.ClassAnalyzer;
 import com.github.zhengyuelaii.desensitize.core.util.FieldMeta;
+import com.github.zhengyuelaii.desensitize.core.util.MaskingDataResolver;
 
 public class EasyDesensitize {
+
+	/**
+	 * 全局软引用缓存（二级缓存）
+	 */
+	private static final Map<Class<?>, SoftReference<List<FieldMeta>>> GLOBAL_CACHE = new ConcurrentHashMap<>();
+
+	public static void clearCache() {
+		GLOBAL_CACHE.clear();
+	}
 
 	public static void mask(Object data) {
 		mask(data, null);
 	}
 
 	public static void mask(Object data, Map<String, MaskingHandler> handlerMap) {
-		mask(data, handlerMap, null);
+		mask(data, null, handlerMap);
 	}
 
-	public static void mask(Object data, Map<String, MaskingHandler> handlerMap,
-			Map<Class<?>, List<FieldMeta>> classCache) {
+	public static void mask(Object data, Map<String, MaskingHandler> handlerMap, boolean useGlobalCache) {
+		mask(data, null, handlerMap, useGlobalCache);
+	}
+
+	public static <T> void mask(T data, MaskingDataResolver<T> resolver, Map<String, MaskingHandler> handlerMap) {
+		mask(data, resolver, handlerMap, true);
+	}
+
+	public static <T> void mask(T data, MaskingDataResolver<T> resolver, Map<String, MaskingHandler> handlerMap,
+			boolean useGlobalCache) {
+		mask(null == resolver ? data : resolver.resolve(data), handlerMap, new HashMap<>(), useGlobalCache);
+	}
+
+	private static void mask(Object data, Map<String, MaskingHandler> handlerMap,
+			Map<Class<?>, List<FieldMeta>> localCache, boolean useGlobalCache) {
 		if (data == null) {
 			return;
-		}
-		if (classCache == null) {
-			// 初始化Bean结构缓存
-			classCache = new HashMap<>();
 		}
 
 		// 执行脱敏
 		if (data instanceof Iterator) {
-			maskIterator((Iterator<?>) data, handlerMap, classCache);
+			maskIterator((Iterator<?>) data, handlerMap, localCache, useGlobalCache);
 		} else if (data instanceof Collection) {
-			maskIterator(((Collection<?>) data).iterator(), handlerMap, classCache);
+			maskIterator(((Collection<?>) data).iterator(), handlerMap, localCache, useGlobalCache);
 		} else if (data instanceof Map) {
-			maskMap((Map<?, Object>) data, handlerMap, classCache);
+			maskMap((Map<?, Object>) data, handlerMap, localCache, useGlobalCache);
 		} else {
-			maskBean(data, handlerMap, classCache);
+			maskBean(data, handlerMap, localCache, useGlobalCache);
 		}
 	}
 
 	private static void maskIterator(Iterator<?> iterator, Map<String, MaskingHandler> hendlerMap,
-			Map<Class<?>, List<FieldMeta>> classCache) {
+			Map<Class<?>, List<FieldMeta>> localCache, boolean useGlobalCache) {
 		while (iterator.hasNext()) {
-			mask(iterator.next(), hendlerMap, classCache);
+			mask(iterator.next(), hendlerMap, localCache, useGlobalCache);
 		}
 	}
 
 	private static void maskMap(Map<?, Object> data, Map<String, MaskingHandler> handlerMap,
-			Map<Class<?>, List<FieldMeta>> classCache) {
+			Map<Class<?>, List<FieldMeta>> localCache, boolean useGlobalCache) {
 		for (Map.Entry<?, Object> entry : data.entrySet()) {
 			Object key = entry.getKey();
 
@@ -73,20 +94,20 @@ public class EasyDesensitize {
 					String maskedValue = handlerMap.get(keyStr).getMaskingValue((String) value);
 					((Map<Object, Object>) data).put(key, maskedValue);
 				} else {
-					mask(value, handlerMap, classCache);
+					mask(value, handlerMap, localCache, useGlobalCache);
 				}
 			} else {
 				// 即使 Key 没匹配上，Value 本身可能是一个包含 @MaskingField 的 Bean
-				mask(value, handlerMap, classCache);
+				mask(value, handlerMap, localCache, useGlobalCache);
 			}
 		}
 	}
 
 	private static void maskBean(Object data, Map<String, MaskingHandler> handlerMap,
-			Map<Class<?>, List<FieldMeta>> classCache) {
+			Map<Class<?>, List<FieldMeta>> localCache, boolean useGlobalCache) {
 		Class<?> clazz = data.getClass();
 		// 从缓存获取该类的脱敏元数据
-		List<FieldMeta> metas = classCache.computeIfAbsent(clazz, k -> ClassAnalyzer.analyze(k, handlerMap));
+		List<FieldMeta> metas = getFieldMetaList(clazz, handlerMap, localCache, useGlobalCache);
 
 		for (FieldMeta meta : metas) {
 			try {
@@ -94,10 +115,10 @@ public class EasyDesensitize {
 				if (value == null) {
 					continue;
 				}
-				if (meta.isNested()) {
+				if (meta.isNested() && !(value instanceof String)) {
 					// 如果是嵌套对象或集合，递归处理
-					mask(value, handlerMap, classCache);
-				} else {
+					mask(value, handlerMap, localCache, useGlobalCache);
+				} else if (value instanceof String) {
 					// 执行脱敏逻辑
 					String maskedValue = meta.getTypeHandler().getMaskingValue((String) value);
 					meta.getField().set(data, maskedValue);
@@ -106,6 +127,41 @@ public class EasyDesensitize {
 				throwSneaky(e);
 			}
 		}
+	}
+
+	private static List<FieldMeta> getFieldMetaList(Class<?> clazz, Map<String, MaskingHandler> handlerMap,
+			Map<Class<?>, List<FieldMeta>> localCache, boolean useGlobalCache) {
+		List<FieldMeta> metas = null;
+
+		// 优先从局部缓存获取
+		if (localCache != null) {
+			metas = localCache.get(clazz);
+		}
+
+		// 局部缓存未命中并且开启全局缓存，从全局缓存中获取
+		if (metas == null && useGlobalCache) {
+			SoftReference<List<FieldMeta>> softRef = GLOBAL_CACHE.get(clazz);
+			if (softRef != null) {
+				metas = softRef.get();
+				// 如果全局缓存命中，同步至局部缓存
+				if (metas != null && localCache != null) {
+					localCache.put(clazz, metas);
+				}
+			}
+		}
+
+		// 缓存未命中，执行分析
+		if (metas == null) {
+			metas = ClassAnalyzer.analyze(clazz, handlerMap);
+			if (localCache != null) {
+				localCache.put(clazz, metas);
+			}
+			if (useGlobalCache) {
+				GLOBAL_CACHE.put(clazz, new SoftReference<List<FieldMeta>>(metas));
+			}
+		}
+
+		return metas;
 	}
 
 	@SuppressWarnings("unchecked")

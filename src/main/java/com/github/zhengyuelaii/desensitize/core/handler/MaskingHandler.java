@@ -1,5 +1,6 @@
 package com.github.zhengyuelaii.desensitize.core.handler;
 
+@FunctionalInterface
 public interface MaskingHandler {
 
 	/**
