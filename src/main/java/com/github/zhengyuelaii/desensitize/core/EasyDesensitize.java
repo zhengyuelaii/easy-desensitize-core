@@ -25,7 +25,7 @@ public class EasyDesensitize {
 	}
 
 	public static void mask(Object data) {
-		mask(data, null);
+		mask(data, null, true);
 	}
 
 	public static void mask(Object data, Map<String, MaskingHandler> handlerMap) {
@@ -34,6 +34,10 @@ public class EasyDesensitize {
 
 	public static void mask(Object data, Map<String, MaskingHandler> handlerMap, boolean useGlobalCache) {
 		mask(data, null, handlerMap, useGlobalCache);
+	}
+	
+	public static <T> void mask(T data, MaskingDataResolver<T> resolver) {
+		mask(data, resolver, null);
 	}
 
 	public static <T> void mask(T data, MaskingDataResolver<T> resolver, Map<String, MaskingHandler> handlerMap) {
