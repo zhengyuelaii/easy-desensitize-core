@@ -52,7 +52,7 @@ public class Masker {
 		StringBuilder sb = new StringBuilder(strLength);
 		sb.append(str, 0, startInclude);
 		for (int i = 0; i < replacedLength; i++) {
-			sb.append('*'); // 默认是星号
+			sb.append(maskChar); // 默认是星号
 		}
 		sb.append(str, endExclude, strLength);
 		return sb.toString();
