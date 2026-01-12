@@ -1,3 +1,5 @@
+
+
 # Easy Desensitize Core
 
 > 🚀 **轻量级、高性能、高扩展性的 Java 数据脱敏引擎核心库**
@@ -14,11 +16,13 @@
 
 ## 📦 快速开始
 
+> 完整代码示例见：[easy-desensitize-samples](https://github.com/zhengyuelaii/easy-desensitize-samples)
+
 ### 1. 引入依赖
 
 ```XML
 <dependency>
-    <groupId>com.github.zhengyuelaii</groupId>
+    <groupId>com.github.zhengyuelaii.desensitize</groupId>
     <artifactId>easy-desensitize-core</artifactId>
     <version>1.0.0</version>
 </dependency>
@@ -30,54 +34,194 @@
 
 ```Java
 public class User {
-
 	@MaskingField(typeHandler = KeepFirstAndLastHandler.class)
 	private String name;
-
 	@MaskingField(typeHandler = FixedMaskHandler.class)
 	private String password;
-
-	// Getter And Setter 略
-
+	// 省略 Getter/Setter/ToString
 }
 ```
 执行脱敏
 ```java
 public class QuickStart {
-	
 	public static void main(String[] args) {
 		User user = new User();
 		user.setName("张小凡");
 		user.setPassword("123456");
 		
 		EasyDesensitize.mask(user);
-		System.out.println(user);
+		System.out.println(user); 
+        // 输出：User [name=张*凡, password=******]
 	}
-
 }
 ```
-输出
-```
-User [name=张*凡, password=******]
+### 3. 脱敏处理器
+
+**EasyDesensitize**框架默认提供以下几种处理器：
+
+* **DefaultMaskingHandler**：不做任何处理，直接返回原值
+* **KeepFirstAndLastHandler**：仅保留首尾字符，中间字符用"*"填充
+* **FixedMaskHandler**：将字段替换为定长字符"\*\*\*\*\*\*"
+
+如果默认处理器无法满足需求，可通过实现 `MaskingHandler` 接口轻松扩展。
+
+```java
+/**
+ * 手机号脱敏处理器示例
+ */
+public class MobileMaskingHandler implements MaskingHandler {
+	@Override
+	public String getMaskingValue(String value) {
+        // 使用内置 Masker 工具类隐藏中间 4 位
+		return Masker.hide(value, 3, 7);
+	}
+}
 ```
 
+为User增加Mobile字段
+
+```java
+public class User {
+	...
+    @MaskingField(typeHandler = MobileMaskingHandler.class)
+	private String mobile;
+	...
+}
+```
+
+执行脱敏
+
+```java
+public class QuickStart {
+	public static void main(String[] args) {
+		User user = new User();
+		user.setName("张小凡");
+		user.setMobile("13700001234");
+		user.setPassword("123456");
+		
+		EasyDesensitize.mask(user);
+		System.out.println(user);
+        // 输出：User [name=张*凡, mobile=137****1234, password=******]
+	}
+}
+```
+
+> 推荐搭配Hutools 的 [DesensitizedUtil](https://doc.hutool.cn/pages/DesensitizedUtil)使用
 ------
 
 ## 🔧 进阶用法
 
+### 1. 复杂类型与递归支持
+
+* List脱敏
+
+```java
+public class ListTypeDesensitize {
+
+	public static void main(String[] args) {
+		User user = new User();
+		user.setName("李小鹏");
+		user.setMobile("13700001234");
+		user.setPassword("123456");
+		
+		// List脱敏
+		List<User> list = Collections.singletonList(user);
+		EasyDesensitize.mask(list);
+		System.out.println(list);
+        // 输出：[User [name=李*鹏, mobile=137****1234, password=******]]
+	}
+}
+```
+
+* Map脱敏
+
+```java
+public class MapTypeDesensitize {
+	
+	public static void main(String[] args) {
+		User user1 = new User("李小鹏", "13700001234", "123456");
+		User user2 = new User("张三", "13888880000", "456789");
+		
+		// Map脱敏
+		Map<String, Object> map = new HashMap<>();
+		map.put("code", 200);
+		map.put("data", user1);
+		map.put("list", Collections.singleton(user2));
+		
+		EasyDesensitize.mask(map);
+		System.out.println(map);
+        // 输出：{code=200, data=User [name=李*鹏, mobile=137****1234, password=******], list=[User [name=张*, mobile=138****0000, password=******]]}
+	}
+}
+```
+
+* 树形数据脱敏
+
+```java
+public class TreeVO {
+	private String id;
+	@MaskingField(typeHandler = KeepFirstAndLastHandler.class)
+	private String name;
+	private List<TreeVO> children;
+	...
+}
+
+public class TreeTypeDesensitize {
+
+	public static void main(String[] args) {
+		TreeVO root = new TreeVO();
+		root.setId("1");
+		root.setName("XXX有限公司");
+		
+		TreeVO t1 = new TreeVO();
+		t1.setId("1001");
+		t1.setName("行政部");
+
+		TreeVO t2 = new TreeVO();
+		t2.setId("1001");
+		t2.setName("研发部");
+		
+		root.setChildren(Arrays.asList(t1, t2));
+		EasyDesensitize.mask(root);
+		System.out.println(root);
+        // 输出：TreeVO [id=1, name=X*****司, children=[TreeVO [id=1001, name=行*部, children=null], TreeVO [id=1001, name=研*部, children=null]]]
+	}
+}
+```
+
 ### 1. 编程式脱敏（无侵入）
 
-适用于无法修改源码或需要动态指定脱敏规则的场景。
+适用于**无法修改源码**（如第三方 SDK 的类）或需要根据业务逻辑**动态改变规则**的场景。
 
 ```Java
-Map<String, MaskingHandler> handlerMap = new HashMap<>();
-// 为 "idCard" 字段动态指定脱敏策略
-handlerMap.put("idCard", new KeepFirstAndLastHandler());
-// 为 "phone" 字段指定手机号脱敏策略
-handlerMap.put("phone", str -> Masker.mobile(str));
+public class TestNode {
+	private String name;
+	private String mobile;
+	...
+}
+// 编程式脱敏
+public class ProgrammaDesensitize {
+	public static void main(String[] args) {
+		// 准备数据
+		Map<String, Object> data = new LinkedHashMap<>();
+		data.put("name", "张三");
 
-// 执行脱敏
-EasyDesensitize.mask(data, handlerMap);
+		TestNode node = new TestNode("王小华", "13700001234");
+		data.put("node", node);
+
+		// 定义脱敏处理器
+		Map<String, MaskingHandler> handler = new HashMap<>();
+        // 基于key自动匹配Map、Bean同名字段进行脱敏
+		handler.put("name", new KeepFirstAndLastHandler());
+        // 采用Function方式定义处理器
+		handler.put("mobile", value -> Masker.hide(value, 3, 7));
+		
+		// 执行脱敏
+		EasyDesensitize.mask(data, handler);
+		System.out.println(data);
+        // 输出：{name=张*, node=TestNode [name=王*华, mobile=137****1234]}
+	}
+}
 ```
 
 ### 2. 处理复杂对象（Resolver）
@@ -85,11 +229,48 @@ EasyDesensitize.mask(data, handlerMap);
 对于 `Page<T>`、`ResultWrapper<T>` 等复杂包装对象，无需编写复杂的反射逻辑，使用 `MaskingDataResolver` 接口即可一键提取。
 
 ```Java
-PageResult<UserVO> page = userService.queryPage();
+// 定义实体类
+public class Page<T> {
+	private Integer pageNum;
+	private Integer pageSize;
+	private List<T> data;
+	...
+}
+// 定义Resolver
+public class PageDataResolver implements MaskingDataResolver<Page<?>> {
 
-// 使用 Lambda 表达式告诉引擎：我要脱敏的是 getItems() 返回的 List
-EasyDesensitize.mask(page, p -> p.getItems().iterator());
+	@Override
+	public Iterator<?> resolve(Page<?> source) {
+		return source.getData().iterator();
+	}
+
+}
+// 实现脱敏
+public class PageWrapperDesensitize {
+	public static void main(String[] args) {
+		Page<User> page = new Page<>();
+		page.setPageNum(1);
+		page.setPageSize(10);
+		
+		User user = new User();
+		user.setName("张小凡");
+		user.setMobile("13700001234");
+		user.setPassword("123456");
+		page.setData(Collections.singletonList(user));
+		
+		// 执行脱敏
+		EasyDesensitize.mask(page, new PageDataResolver());
+		System.out.println(page);
+        // 输出：Page [pageNum=1, pageSize=10, data=[User [name=张*凡, mobile=137****1234, password=******]]]
+	}
+}
 ```
+* 或者也可以使用 Lambda 表达式定义如何提取数据
+```java
+EasyDesensitize.mask(page, p -> p.getData().iterator());
+```
+
+> **💡 性能提示**：虽然框架具备自动扫描结构的能力，但对于已知结构的复杂对象，通过 `Resolver` 显式指定数据路径可大幅减少反射扫描，提升处理性能。
 
 ### 3. 全局缓存控制
 
@@ -110,7 +291,47 @@ EasyDesensitize.clearCache();
 `Masker` 提供了语义化的静态方法，无需记忆复杂的索引计算。
 
 ```Java
-// TODO
+public class MaskerUsageSample {
+
+	public static void main(String[] args) {
+		System.out.println("========= 1. 基础脱敏 (指定索引) =========");
+        String raw = "1234567890";
+        // 脱敏索引 3 到 7 (即：4567)
+        String basic = Masker.hide(raw, 3, 7);
+        System.out.println("原字符串: " + raw);
+        System.out.println("脱敏结果: " + basic); // 123****890
+
+        System.out.println("\n========= 2. 自定义掩码字符 =========");
+        // 使用 '#' 代替 '*'
+        String customChar = Masker.hide(raw, "#", 3, 7);
+        System.out.println("自定义掩码 (#): " + customChar); // 123####890
+
+        System.out.println("\n========= 3. 常见业务场景模拟 =========");
+        
+        // 手机号脱敏示例 (保留前3后4)
+        String phone = "13812345678";
+        String maskedPhone = Masker.hide(phone, 3, phone.length() - 4);
+        System.out.println("手机号脱敏: " + maskedPhone); // 138****5678
+
+        // 姓名脱敏示例 (保留第1位)
+        String name = "张无忌";
+        String maskedName = Masker.hide(name, 1, name.length());
+        System.out.println("姓名脱敏: " + maskedName); // 张**
+	}
+}
+```
+输出：
+```
+========= 1. 基础脱敏 (指定索引) =========
+原字符串: 1234567890
+脱敏结果: 123****890
+
+========= 2. 自定义掩码字符 =========
+自定义掩码 (#): 123####890
+
+========= 3. 常见业务场景模拟 =========
+手机号脱敏: 138****5678
+姓名脱敏: 张**
 ```
 
 ------
