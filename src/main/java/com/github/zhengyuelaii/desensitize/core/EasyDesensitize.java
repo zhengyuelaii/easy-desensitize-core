@@ -13,6 +13,16 @@ import com.github.zhengyuelaii.desensitize.core.util.ClassAnalyzer;
 import com.github.zhengyuelaii.desensitize.core.util.FieldMeta;
 import com.github.zhengyuelaii.desensitize.core.util.MaskingDataResolver;
 
+/**
+ * 数据脱敏核心处理类
+ * <p>
+ * 该类提供了统一的数据脱敏接口，支持对各种类型的数据结构进行脱敏处理，
+ * 包括普通对象、集合、映射等，并通过缓存机制优化性能。
+ * </p>
+ * @author zhengyuelaii
+ * @version 1.0.0
+ * @since 2026-01-14
+ */
 public class EasyDesensitize {
 
 	/**
@@ -20,9 +30,18 @@ public class EasyDesensitize {
 	 */
 	private static final Map<Class<?>, SoftReference<List<FieldMeta>>> GLOBAL_CACHE = new ConcurrentHashMap<>();
 
+	/**
+	 * 清空全局缓存
+	 *
+	 * 该方法用于清空应用程序中的全局缓存，释放所有缓存的数据，
+	 * 通常在需要重置缓存状态或释放内存资源时调用。
+	 *
+	 * @return 无返回值
+	 */
 	public static void clearCache() {
 		GLOBAL_CACHE.clear();
 	}
+
 
 	public static void mask(Object data) {
 		mask(data, null, true);
@@ -49,6 +68,15 @@ public class EasyDesensitize {
 		mask(null == resolver ? data : resolver.resolve(data), handlerMap, new HashMap<>(), useGlobalCache);
 	}
 
+	/**
+	 * 对数据进行脱敏处理
+	 * 支持对迭代器、集合、映射和普通对象类型的脱敏操作
+	 *
+	 * @param data 待脱敏的数据对象，支持Iterator、Collection、Map和普通Java对象
+	 * @param handlerMap 脱敏处理器映射表，用于获取对应字段的脱敏规则
+	 * @param localCache 本地缓存，存储类字段元数据信息，用于快速访问字段属性
+	 * @param useGlobalCache 是否使用全局缓存，决定是否启用全局字段元数据缓存机制
+	 */
 	private static void mask(Object data, Map<String, MaskingHandler> handlerMap,
 			Map<Class<?>, List<FieldMeta>> localCache, boolean useGlobalCache) {
 		if (data == null) {
