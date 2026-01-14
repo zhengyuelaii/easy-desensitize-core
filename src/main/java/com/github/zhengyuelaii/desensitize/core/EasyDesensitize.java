@@ -1,11 +1,7 @@
 package com.github.zhengyuelaii.desensitize.core;
 
 import java.lang.ref.SoftReference;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.github.zhengyuelaii.desensitize.core.handler.MaskingHandler;
@@ -84,7 +80,9 @@ public class EasyDesensitize {
 		}
 
 		// 执行脱敏
-		if (data instanceof Iterator) {
+		if (data.getClass().isArray()) {
+			maskIterator(Arrays.asList((Object[]) data).iterator(), handlerMap, localCache, useGlobalCache);
+		} else if (data instanceof Iterator) {
 			maskIterator((Iterator<?>) data, handlerMap, localCache, useGlobalCache);
 		} else if (data instanceof Collection) {
 			maskIterator(((Collection<?>) data).iterator(), handlerMap, localCache, useGlobalCache);
