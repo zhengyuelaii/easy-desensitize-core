@@ -2,6 +2,13 @@ package com.github.zhengyuelaii.desensitize.core.util;
 
 import java.util.Iterator;
 
+/**
+ * 脱敏数据解析器
+ *
+ * @author zhengyuelaii
+ * @version 1.0.0
+ * @since 2026-01-15
+ */
 @FunctionalInterface
 public interface MaskingDataResolver<T> {
 
