@@ -18,6 +18,6 @@ public interface MaskingDataResolver<T> {
 	 * @param source 原始对象
 	 * @return 待脱敏元素的迭代器
 	 */
-	Iterator<?> resolve(T source);
+	Object resolve(T source);
 
 }
