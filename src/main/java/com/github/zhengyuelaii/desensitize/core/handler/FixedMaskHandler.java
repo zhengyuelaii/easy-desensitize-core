@@ -13,6 +13,7 @@ public class FixedMaskHandler implements MaskingHandler {
 
 	/**
 	 * 自定义构造：指定掩码样式，如 "*****"
+	 * @param mask 掩码样式
 	 */
 	public FixedMaskHandler(String mask) {
 		this.mask = mask;

@@ -1,7 +1,15 @@
 package com.github.zhengyuelaii.desensitize.core.handler;
 
 /**
- * 仅保留首尾字符处理器 示例：张三 -> 张* / 欧阳锋 -> 欧*锋 / 123456 -> 1****6
+ * 仅保留首尾字符处理器
+ * 示例：
+ * <p>张三 -&gt; 张*</p>
+ * <p>欧阳锋 -&gt; 欧*锋 </p>
+ * <p>123456 -&gt; 1****6</p>
+ *
+ * @author zhengyuelaii
+ * @version 1.0.0
+ * @since 2026-01-14
  */
 public class KeepFirstAndLastHandler implements MaskingHandler {
 

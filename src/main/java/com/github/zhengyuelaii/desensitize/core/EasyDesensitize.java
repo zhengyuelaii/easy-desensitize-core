@@ -29,10 +29,8 @@ public class EasyDesensitize {
 	/**
 	 * 清空全局缓存
 	 *
-	 * 该方法用于清空应用程序中的全局缓存，释放所有缓存的数据，
-	 * 通常在需要重置缓存状态或释放内存资源时调用。
-	 *
-	 * @return 无返回值
+	 * <p>该方法用于清空应用程序中的全局缓存，释放所有缓存的数据，
+	 * 通常在需要重置缓存状态或释放内存资源时调用。</p>
 	 */
 	public static void clearCache() {
 		GLOBAL_CACHE.clear();

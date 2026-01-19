@@ -17,14 +17,14 @@ public @interface MaskingField {
 	/**
 	 * 脱敏字段名（JavaBean情况下无需设置此字段）
 	 * 
-	 * @return
+	 * @return 脱敏字段的名称
 	 */
 	String name() default "";
 
 	/**
 	 * 脱敏处理器
 	 * 
-	 * @return
+	 * @return 脱敏处理器
 	 */
 	Class<? extends MaskingHandler> typeHandler() default DefaultMaskingHandler.class;
 
