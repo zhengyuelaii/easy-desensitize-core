@@ -24,7 +24,7 @@
 <dependency>
     <groupId>com.github.zhengyuelaii.desensitize</groupId>
     <artifactId>easy-desensitize-core</artifactId>
-    <version>1.0.0</version>
+    <version>${latest.version}</version>
 </dependency>
 ```
 
@@ -278,7 +278,7 @@ EasyDesensitize.mask(page, p -> p.getData().iterator());
 
 ```Java
 // 第三个参数 false 表示关闭全局缓存，仅使用单次任务级缓存
-EasyDesensitize.mask(data, handlerMap, false);
+EasyDesensitize.mask(data, null, handlerMap, false);
 
 // 手动清理全局缓存（如有需要）
 EasyDesensitize.clearCache();
