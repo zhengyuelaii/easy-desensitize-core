@@ -3,7 +3,11 @@ package com.github.zhengyuelaii.desensitize.core;
 import static org.assertj.core.api.Assertions.*;
 
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
+import com.github.zhengyuelaii.desensitize.core.util.Masker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -349,6 +353,54 @@ class EasyDesensitizeTest {
             // 不应该抛出异常
             EasyDesensitize.mask(emptyMap);
         }
+    }
+
+    @Nested
+    @DisplayName("缓存条件测试")
+    class CacheCaseTest {
+
+        public class CacheBean {
+            @MaskingField(typeHandler = KeepFirstAndLastHandler.class)
+            private String name;
+            private String mobile;
+            public String getMobile() {
+                return mobile;
+            }
+            public void setMobile(String mobile) {
+                this.mobile = mobile;
+            }
+            public String getName() {
+                return name;
+            }
+            public void setName(String name) {
+                this.name = name;
+            }
+        }
+
+        @Test
+        @DisplayName("缓存应不被handlerMap影响")
+        public void shouldCache() {
+            Supplier<CacheBean> getBean = () -> {
+                CacheBean bean = new CacheBean();
+                bean.setName("张三");
+                bean.setMobile("13800000001");
+                return bean;
+            };
+
+            CacheBean bean_0 = getBean.get();
+            Map<String, MaskingHandler> handlerMap = new HashMap<>();
+            handlerMap.put("mobile", value -> Masker.hide(value, 3, 7));
+            EasyDesensitize.mask(bean_0, handlerMap);
+
+            assertThat(bean_0.getName()).isEqualTo("张*");
+            assertThat(bean_0.getMobile()).isEqualTo("138****0001");
+
+            CacheBean bean_1 = getBean.get();
+            EasyDesensitize.mask(bean_1);
+            assertThat(bean_1.getName()).isEqualTo("张*");
+            assertThat(bean_1.getMobile()).isEqualTo("13800000001");
+        }
+
     }
 
 }

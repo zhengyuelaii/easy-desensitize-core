@@ -135,7 +135,7 @@ public class EasyDesensitize {
 			Map<Class<?>, List<FieldMeta>> localCache, boolean useGlobalCache) {
 		Class<?> clazz = data.getClass();
 		// 从缓存获取该类的脱敏元数据
-		List<FieldMeta> metas = getFieldMetaList(clazz, handlerMap, localCache, useGlobalCache);
+		List<FieldMeta> metas = getFieldMetaList(clazz, localCache, useGlobalCache);
 
 		for (FieldMeta meta : metas) {
 			try {
@@ -147,9 +147,16 @@ public class EasyDesensitize {
 					// 如果是嵌套对象或集合，递归处理
 					mask(value, handlerMap, localCache, useGlobalCache);
 				} else if (value instanceof String) {
-					// 执行脱敏逻辑
-					String maskedValue = meta.getTypeHandler().getMaskingValue((String) value);
-					meta.getField().set(data, maskedValue);
+					String name = meta.getField().getName(), maskedValue = (String) value;
+					if (meta.getTypeHandler() != null) {
+						// 字段注解优先生效?
+						maskedValue = meta.getTypeHandler().getMaskingValue((String) value);
+					} else if (handlerMap != null && handlerMap.containsKey(name)) {
+						maskedValue = handlerMap.get(name).getMaskingValue((String) value);
+					}
+					if (!Objects.equals(value, maskedValue)) {
+						meta.getField().set(data, maskedValue);
+					}
 				}
 			} catch (IllegalArgumentException | IllegalAccessException e) {
 				throwSneaky(e);
@@ -157,8 +164,7 @@ public class EasyDesensitize {
 		}
 	}
 
-	private static List<FieldMeta> getFieldMetaList(Class<?> clazz, Map<String, MaskingHandler> handlerMap,
-			Map<Class<?>, List<FieldMeta>> localCache, boolean useGlobalCache) {
+	private static List<FieldMeta> getFieldMetaList(Class<?> clazz, Map<Class<?>, List<FieldMeta>> localCache, boolean useGlobalCache) {
 		List<FieldMeta> metas = null;
 
 		// 优先从局部缓存获取
@@ -180,7 +186,7 @@ public class EasyDesensitize {
 
 		// 缓存未命中，执行分析
 		if (metas == null) {
-			metas = ClassAnalyzer.analyze(clazz, handlerMap);
+			metas = ClassAnalyzer.analyze(clazz);
 			if (localCache != null) {
 				localCache.put(clazz, metas);
 			}

@@ -43,10 +43,9 @@ public class ClassAnalyzer {
 	 * 分析指定类的字段，生成字段元数据信息列表
 	 *
 	 * @param clazz 需要分析的类对象
-	 * @param handlerMap 字段名称到脱敏处理器的映射表，可为null
 	 * @return 字段元数据信息列表，如果类为基础类型或JDK类则返回空列表
 	 */
-	public static List<FieldMeta> analyze(Class<?> clazz, Map<String, MaskingHandler> handlerMap) {
+	public static List<FieldMeta> analyze(Class<?> clazz) {
 		if (isPrimitiveOrJdkClass(clazz)) {
 			return Collections.emptyList();
 		}
@@ -63,39 +62,25 @@ public class ClassAnalyzer {
 				}
 
 				field.setAccessible(true); // Pre-authorize for performance
+				FieldMeta fieldMeta = new FieldMeta(field);
 
 				MaskingField annotation = field.getAnnotation(MaskingField.class);
 				if (annotation != null) {
 					// 标记了脱敏注解的字段
 					if (field.getType().equals(String.class)) {
-						metas.add(new FieldMeta(field, MaskingHandlerFactory.getHandler(annotation.typeHandler()),
-								false));
+						fieldMeta.setTypeHandler(MaskingHandlerFactory.getHandler(annotation.typeHandler()));
 					} else {
 						throw new RuntimeException(String.format(
 								"Invalid @MaskingField usage: Field '%s' in class '%s' must be of type java.lang.String, but found %s.",
 								field.getName(), field.getDeclaringClass().getName(), field.getType().getSimpleName()));
 					}
-					continue;
-				}
-
-				if (null != handlerMap && handlerMap.containsKey(field.getName())) {
-					// 使用名称映射的字段
-					MaskingHandler handler = handlerMap.get(field.getName());
-					if (null != handler) {
-						metas.add(new FieldMeta(field, handler, false));
-					} else {
-						throw new RuntimeException(String.format(
-								"Configuration error: The MaskingHandler mapped to field '%s' in class '%s' is null. "
-										+ "Please check your manual configuration or global handler mapping.",
-								field.getName(), field.getDeclaringClass().getName()));
-					}
-					continue;
 				}
 
 				if (isCollectionOrMap(field.getType()) || !isPrimitiveOrJdkClass(field.getType())) {
 					// 未标记注解，运行时递归处理
-					metas.add(new FieldMeta(field, null, true));
+					fieldMeta.setNested(true);
 				}
+				metas.add(fieldMeta);
 			}
 			currentClass = currentClass.getSuperclass();
 		}

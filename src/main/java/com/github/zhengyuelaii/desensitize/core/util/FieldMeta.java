@@ -9,17 +9,24 @@ import com.github.zhengyuelaii.desensitize.core.handler.MaskingHandler;
  */
 public class FieldMeta {
 
-	private final Field field;
+	private Field field;
 
 	/**
 	 * 脱敏处理器
 	 */
-	private final MaskingHandler typeHandler;
+	private MaskingHandler typeHandler;
 
 	/**
 	 * 是否是嵌套对象/集合（需要递归）
 	 */
-	private final boolean isNested;
+	private boolean isNested;
+
+	public FieldMeta() {}
+
+	public FieldMeta(Field field) {
+		this.field = field;
+		this.isNested = false;
+	}
 
 	public FieldMeta(Field field, MaskingHandler typeHandler, boolean isNested) {
 		super();
@@ -32,12 +39,24 @@ public class FieldMeta {
 		return field;
 	}
 
+	public void setField(Field field) {
+		this.field = field;
+	}
+
 	public MaskingHandler getTypeHandler() {
 		return typeHandler;
 	}
 
+	public void setTypeHandler(MaskingHandler typeHandler) {
+		this.typeHandler = typeHandler;
+	}
+
 	public boolean isNested() {
 		return isNested;
+	}
+
+	public void setNested(boolean nested) {
+		isNested = nested;
 	}
 
 	@Override
