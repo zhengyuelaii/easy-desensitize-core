@@ -1,6 +1,7 @@
 package com.github.zhengyuelaii.desensitize.core;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -45,8 +46,13 @@ class EasyDesensitizeTest {
                 this.phone = phone;
             }
 
-            public String getName() { return name; }
-            public String getPhone() { return phone; }
+            public String getName() {
+                return name;
+            }
+
+            public String getPhone() {
+                return phone;
+            }
         }
 
         @Test
@@ -87,16 +93,21 @@ class EasyDesensitizeTest {
                 this.email = email;
             }
 
-            public String getUsername() { return username; }
-            public String getEmail() { return email; }
+            public String getUsername() {
+                return username;
+            }
+
+            public String getEmail() {
+                return email;
+            }
         }
 
         @Test
         @DisplayName("应能对List中的对象进行脱敏")
         void shouldMaskListElements() {
             List<User> users = Arrays.asList(
-                new User("李小明", "lilei@example.com"),
-                new User("王大锤", "wang@example.com")
+                    new User("李小明", "lilei@example.com"),
+                    new User("王大锤", "wang@example.com")
             );
 
             EasyDesensitize.mask(users);
@@ -116,7 +127,7 @@ class EasyDesensitizeTest {
 
             // 检查集合中是否有脱敏后的元素
             boolean hasMaskedUsers = users.stream()
-                .anyMatch(user -> user.getUsername().equals("李*明") || user.getUsername().equals("王*锤"));
+                    .anyMatch(user -> user.getUsername().equals("李*明") || user.getUsername().equals("王*锤"));
             assertThat(hasMaskedUsers).isTrue();
         }
 
@@ -124,8 +135,8 @@ class EasyDesensitizeTest {
         @DisplayName("应能对数组进行脱敏")
         void shouldMaskArrayElements() {
             User[] users = {
-                new User("李小明", "lilei@example.com"),
-                new User("王大锤", "wang@example.com")
+                    new User("李小明", "lilei@example.com"),
+                    new User("王大锤", "wang@example.com")
             };
 
             EasyDesensitize.mask(users);
@@ -166,8 +177,8 @@ class EasyDesensitizeTest {
             data.put(1, "张三丰");
 
             assertThatThrownBy(() -> EasyDesensitize.mask(data))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Unsupported Map Key type");
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("Unsupported Map Key type");
         }
 
         public class Info {
@@ -179,7 +190,9 @@ class EasyDesensitizeTest {
                 this.info = info;
             }
 
-            public String getInfo() { return info; }
+            public String getInfo() {
+                return info;
+            }
         }
 
         @Test
@@ -208,7 +221,9 @@ class EasyDesensitizeTest {
                 this.detail = detail;
             }
 
-            public String getDetail() { return detail; }
+            public String getDetail() {
+                return detail;
+            }
         }
 
         public class Employee {
@@ -221,8 +236,13 @@ class EasyDesensitizeTest {
                 this.address = address;
             }
 
-            public String getName() { return name; }
-            public Address getAddress() { return address; }
+            public String getName() {
+                return name;
+            }
+
+            public Address getAddress() {
+                return address;
+            }
         }
 
         @Test
@@ -249,7 +269,9 @@ class EasyDesensitizeTest {
                 this.field = field;
             }
 
-            public String getField() { return field; }
+            public String getField() {
+                return field;
+            }
         }
 
         @Test
@@ -362,15 +384,19 @@ class EasyDesensitizeTest {
             @MaskingField(typeHandler = KeepFirstAndLastHandler.class)
             private String name;
             private String mobile;
+
             public String getMobile() {
                 return mobile;
             }
+
             public void setMobile(String mobile) {
                 this.mobile = mobile;
             }
+
             public String getName() {
                 return name;
             }
+
             public void setName(String name) {
                 this.name = name;
             }
@@ -430,15 +456,19 @@ class EasyDesensitizeTest {
             private String name;
             @MaskingField(typeHandler = FixedMaskHandler.class)
             private String mobile;
+
             public String getMobile() {
                 return mobile;
             }
+
             public void setMobile(String mobile) {
                 this.mobile = mobile;
             }
+
             public String getName() {
                 return name;
             }
+
             public void setName(String name) {
                 this.name = name;
             }
@@ -458,6 +488,44 @@ class EasyDesensitizeTest {
             EasyDesensitize.mask(list, null, excludeFields);
             assertThat(list.get(0).getName()).isEqualTo("李晓明");
             assertThat(list.get(0).getMobile()).isEqualTo("******");
+        }
+    }
+
+    @Nested
+    @DisplayName("循环引用测试")
+    class CircularReferenceTest {
+
+        public class SelfRefUser {
+
+            @MaskingField(typeHandler = FixedMaskHandler.class)
+            private String phone;
+            private SelfRefUser self;
+
+            public String getPhone() {
+                return phone;
+            }
+
+            public void setPhone(String phone) {
+                this.phone = phone;
+            }
+
+            public SelfRefUser getSelf() {
+                return self;
+            }
+
+            public void setSelf(SelfRefUser self) {
+                this.self = self;
+            }
+        }
+
+        @Test
+        @DisplayName("循环引用应被处理")
+        public void shouldHandleCircularReference() {
+            SelfRefUser data = new SelfRefUser();
+            data.setPhone("13800000001");
+            data.setSelf(data);
+
+            assertDoesNotThrow(() -> EasyDesensitize.mask(data));
         }
 
     }
