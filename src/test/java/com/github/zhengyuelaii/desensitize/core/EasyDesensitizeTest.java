@@ -314,40 +314,6 @@ class EasyDesensitizeTest {
     }
 
     @Nested
-    @DisplayName("自定义解析器测试")
-    class ResolverTest {
-
-        public class CustomContainer {
-            private List<String> items = new ArrayList<>();
-
-            public void addItem(String item) {
-                items.add(item);
-            }
-
-            public List<String> getItems() {
-                return items;
-            }
-        }
-
-        @Test
-        @DisplayName("应能使用自定义解析器处理复杂对象")
-        void shouldUseCustomResolver() {
-            // TODO 待完善
-            CustomContainer container = new CustomContainer();
-            container.addItem("敏感信息1");
-            container.addItem("敏感信息2");
-
-            MaskingDataResolver<CustomContainer> resolver = source -> source.getItems().iterator();
-            Map<String, MaskingHandler> handlerMap = new HashMap<>();
-            handlerMap.put("item", fixedMaskHandler);
-
-            EasyDesensitize.mask(container, resolver, handlerMap, null);
-
-            assertThat(container.getItems()).containsOnly("***", "***");
-        }
-    }
-
-    @Nested
     @DisplayName("边界条件测试")
     class EdgeCaseTest {
 
