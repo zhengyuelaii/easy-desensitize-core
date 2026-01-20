@@ -37,31 +37,122 @@ public class EasyDesensitize {
         GLOBAL_CACHE.clear();
     }
 
+    /**
+     * 对数据进行脱敏处理。
+     *
+     * <p>等价于调用 {@link #mask(Object, MaskingDataResolver, Map, Set, boolean)}
+     * 并使用默认配置。</p>
+     *
+     * @param data 待脱敏的数据对象
+     * @see #mask(Object, MaskingDataResolver, Map, Set, boolean)
+     */
     public static void mask(Object data) {
         mask(data, null, null);
     }
 
+    /**
+     * 对数据进行脱敏处理，并指定字段级脱敏规则。
+     *
+     * <p>当字段未声明注解脱敏规则时，
+     * 将使用 {@code handlerMap} 中按字段名匹配的处理器。</p>
+     *
+     * @param data 待脱敏的数据对象
+     * @param handlerMap 字段级脱敏处理器映射表
+     *
+     * @see #mask(Object, MaskingDataResolver, Map, Set, boolean)
+     */
     public static void mask(Object data, Map<String, MaskingHandler> handlerMap) {
         mask(data, handlerMap, null);
     }
 
+    /**
+     * 对数据进行脱敏处理，并跳过指定字段。
+     *
+     * <p>{@code excludeFields} 中的字段名将不会参与任何脱敏逻辑，
+     * 即使字段上声明了脱敏注解。</p>
+     *
+     * @param data 待脱敏的数据对象
+     * @param handlerMap 字段级脱敏处理器映射表
+     * @param excludeFields 需要跳过脱敏的字段名集合
+     *
+     * @see #mask(Object, MaskingDataResolver, Map, Set, boolean)
+     */
     public static void mask(Object data, Map<String, MaskingHandler> handlerMap, Set<String> excludeFields) {
         mask(data, null, handlerMap, excludeFields, true);
     }
 
+    /**
+     * 对数据进行脱敏处理，并通过解析器提取真实脱敏目标。
+     *
+     * <p>适用于分页对象、统一返回包装类等场景。</p>
+     *
+     * @param data 原始数据对象
+     * @param resolver 数据解析器
+     *
+     * @see #mask(Object, MaskingDataResolver, Map, Set, boolean)
+     */
     public static <T> void mask(T data, MaskingDataResolver<T> resolver) {
         mask(data, resolver, null, null);
     }
 
+    /**
+     * 对数据进行脱敏处理，并通过解析器提取真实脱敏目标。
+     *
+     * <p>适用于分页对象、统一返回包装类等场景。</p>
+     *
+     * @param data 原始数据对象
+     * @param resolver 数据解析器
+     * @param excludeFields 需要跳过脱敏的字段名集合
+     *
+     * @see #mask(Object, MaskingDataResolver, Map, Set, boolean)
+     */
     public static <T> void mask(T data, MaskingDataResolver<T> resolver, Map<String, MaskingHandler> handlerMap, Set<String> excludeFields) {
         mask(data, resolver, handlerMap, excludeFields, true);
     }
 
+    /**
+     * 对数据进行脱敏处理，并通过解析器提取真实脱敏目标。
+     *
+     * <p>适用于分页对象、统一返回包装类等场景。</p>
+     *
+     * @param data 原始数据对象
+     * @param resolver 数据解析器
+     * @param useGlobalCache 是否启用全局字段元数据缓存
+     *
+     * @see #mask(Object, MaskingDataResolver, Map, Set, boolean)
+     */
     public static <T> void mask(T data, MaskingDataResolver<T> resolver, Map<String, MaskingHandler> handlerMap,
                                 boolean useGlobalCache) {
         mask(data, resolver, handlerMap, null, useGlobalCache);
     }
 
+    /**
+     * 对数据进行脱敏处理
+     *
+     * <p>支持普通 Java Bean、Collection、Map、Iterator 等结构，
+     * 并可通过 {@link MaskingDataResolver} 解析包装对象。</p>
+     *
+     * <p>脱敏规则优先级：</p>
+     * <ol>
+     *   <li>字段注解定义的脱敏规则</li>
+     *   <li>{@code handlerMap} 中按字段名匹配的规则</li>
+     * </ol>
+     *
+     * <p>默认行为：</p>
+     * <ul>
+     *   <li>递归处理嵌套对象</li>
+     *   <li>忽略 {@code null} 值</li>
+     *   <li>默认启用全局字段元数据缓存</li>
+     * </ul>
+     *
+     * @param data 待脱敏的数据对象（支持 Bean / Collection / Map）
+     * @param resolver 数据解析器，用于从包装对象中提取真实脱敏目标，可为 {@code null}
+     * @param handlerMap 字段级脱敏处理器映射表，Key 为字段名，可为 {@code null}
+     * @param excludeFields 需要跳过脱敏的字段名集合（字段名级别），可为 {@code null}
+     * @param useGlobalCache 是否启用全局字段元数据缓存
+     *
+     * @throws RuntimeException 当 Map 的 Key 不是 String 类型时抛出
+     */
     public static <T> void mask(T data, MaskingDataResolver<T> resolver, Map<String, MaskingHandler> handlerMap,
                                 Set<String> excludeFields, boolean useGlobalCache) {
         mask(null == resolver ? data : resolver.resolve(data), handlerMap, excludeFields, new HashMap<>(), useGlobalCache);
