@@ -258,8 +258,8 @@ class EasyDesensitizeTest {
             SimpleBean bean1 = new SimpleBean("测试数据1");
             SimpleBean bean2 = new SimpleBean("测试数据2");
 
-            EasyDesensitize.mask(bean1, null, true); // 启用全局缓存
-            EasyDesensitize.mask(bean2, null, true); // 使用全局缓存
+            EasyDesensitize.mask(bean1, null, null, true); // 启用全局缓存
+            EasyDesensitize.mask(bean2, null, null, true); // 使用全局缓存
 
             assertThat(bean1.getField()).isEqualTo("测***1");
             assertThat(bean2.getField()).isEqualTo("测***2");
@@ -270,7 +270,7 @@ class EasyDesensitizeTest {
         void shouldDisableGlobalCache() {
             SimpleBean bean = new SimpleBean("测试数据");
 
-            EasyDesensitize.mask(bean, null, false); // 禁用全局缓存
+            EasyDesensitize.mask(bean, null, null, false); // 禁用全局缓存
 
             assertThat(bean.getField()).isEqualTo("测**据");
         }
@@ -319,7 +319,7 @@ class EasyDesensitizeTest {
             Map<String, MaskingHandler> handlerMap = new HashMap<>();
             handlerMap.put("item", fixedMaskHandler);
 
-            EasyDesensitize.mask(container, resolver, handlerMap);
+            EasyDesensitize.mask(container, resolver, handlerMap, null);
 
             assertThat(container.getItems()).containsOnly("***", "***");
         }
@@ -334,8 +334,7 @@ class EasyDesensitizeTest {
         void shouldHandleNullInput() {
             // 不应该抛出异常
             EasyDesensitize.mask(null);
-//            EasyDesensitize.mask(null, null);
-            EasyDesensitize.mask(null, null, true);
+            EasyDesensitize.mask(null, null, null);
         }
 
         @Test
@@ -399,6 +398,66 @@ class EasyDesensitizeTest {
             EasyDesensitize.mask(bean_1);
             assertThat(bean_1.getName()).isEqualTo("张*");
             assertThat(bean_1.getMobile()).isEqualTo("13800000001");
+        }
+    }
+
+
+    @Nested
+    @DisplayName("排除字段测试")
+    class ExcludeFieldsCaseTest {
+
+        @Test
+        @DisplayName("脱敏应能排除字段（Map）")
+        public void shouldExcludeFieldsForMap() {
+            Map<String, Object> data = new HashMap<>();
+            data.put("name", "李晓明");
+            data.put("mobile", "13800000001");
+
+            Map<String, MaskingHandler> handlerMap = new HashMap<>();
+            handlerMap.put("name", keepFirstLastHandler);
+            handlerMap.put("mobile", value -> Masker.hide(value, 3, 7));
+
+            Set<String> excludeFields = new HashSet<>();
+            excludeFields.add("mobile");
+
+            EasyDesensitize.mask(data, handlerMap, excludeFields);
+            assertThat(data.get("name")).isEqualTo("李*明");
+            assertThat(data.get("mobile")).isEqualTo("13800000001");
+        }
+
+        public class MaskBean {
+            @MaskingField(typeHandler = KeepFirstAndLastHandler.class)
+            private String name;
+            @MaskingField(typeHandler = FixedMaskHandler.class)
+            private String mobile;
+            public String getMobile() {
+                return mobile;
+            }
+            public void setMobile(String mobile) {
+                this.mobile = mobile;
+            }
+            public String getName() {
+                return name;
+            }
+            public void setName(String name) {
+                this.name = name;
+            }
+        }
+
+        @Test
+        @DisplayName("脱敏应能排除字段（List）")
+        public void shouldExcludeFieldsForList() {
+            MaskBean bean = new MaskBean();
+            bean.setName("李晓明");
+            bean.setMobile("13800000001");
+            List<MaskBean> list = new ArrayList<>();
+            list.add(bean);
+
+            Set<String> excludeFields = new HashSet<>();
+            excludeFields.add("name");
+            EasyDesensitize.mask(list, null, excludeFields);
+            assertThat(list.get(0).getName()).isEqualTo("李晓明");
+            assertThat(list.get(0).getMobile()).isEqualTo("******");
         }
 
     }
