@@ -22,7 +22,7 @@
 
 ```XML
 <dependency>
-    <groupId>com.github.zhengyuelaii.desensitize</groupId>
+    <groupId>io.github.zhengyuelaii</groupId>
     <artifactId>easy-desensitize-core</artifactId>
     <version>${latest.version}</version>
 </dependency>
