@@ -84,6 +84,7 @@ public class EasyDesensitize {
      *
      * <p>适用于分页对象、统一返回包装类等场景。</p>
      *
+     * @param <T>      原始数据类型
      * @param data     原始数据对象
      * @param resolver 数据解析器
      * @see #mask(Object, MaskingDataResolver, Map, Set, boolean)
@@ -97,8 +98,10 @@ public class EasyDesensitize {
      *
      * <p>适用于分页对象、统一返回包装类等场景。</p>
      *
+     * @param <T>           原始数据类型
      * @param data          原始数据对象
      * @param resolver      数据解析器
+     * @param handlerMap    字段级脱敏处理器映射表
      * @param excludeFields 需要跳过脱敏的字段名集合
      * @see #mask(Object, MaskingDataResolver, Map, Set, boolean)
      */
@@ -111,8 +114,10 @@ public class EasyDesensitize {
      *
      * <p>适用于分页对象、统一返回包装类等场景。</p>
      *
+     * @param <T>            原始数据类型
      * @param data           原始数据对象
      * @param resolver       数据解析器
+     * @param handlerMap     字段级脱敏处理器映射表
      * @param useGlobalCache 是否启用全局字段元数据缓存
      * @see #mask(Object, MaskingDataResolver, Map, Set, boolean)
      */
@@ -140,6 +145,7 @@ public class EasyDesensitize {
      *   <li>默认启用全局字段元数据缓存</li>
      * </ul>
      *
+     * @param <T>            原始数据类型
      * @param data           待脱敏的数据对象（支持 Bean / Collection / Map）
      * @param resolver       数据解析器，用于从包装对象中提取真实脱敏目标，可为 {@code null}
      * @param handlerMap     字段级脱敏处理器映射表，Key 为字段名，可为 {@code null}
