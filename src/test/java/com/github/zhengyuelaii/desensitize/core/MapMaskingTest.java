@@ -116,7 +116,7 @@ public class MapMaskingTest {
                 .hasMessageContaining("Unsupported Map Key type");
     }
 
-    public static class Person {
+    static class Person {
 
         @MaskingField(typeHandler = KeepFirstAndLastHandler.class)
         private String name;

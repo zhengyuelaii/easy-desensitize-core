@@ -120,7 +120,7 @@ public class BasicMaskingTest {
         }
     }
 
-    public static class Person {
+    static class Person {
 
         @MaskingField(typeHandler = KeepFirstAndLastHandler.class)
         private String name;
@@ -163,7 +163,7 @@ public class BasicMaskingTest {
 
     }
 
-    public static class Employee extends Person {
+    static class Employee extends Person {
 
         @MaskingField(typeHandler = KeepFirstAndLastHandler.class)
         private String employeeId;
