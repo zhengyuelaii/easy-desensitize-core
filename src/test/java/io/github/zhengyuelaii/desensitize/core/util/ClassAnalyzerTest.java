@@ -131,6 +131,19 @@ public class ClassAnalyzerTest {
         assertThat(nestedMeta.isNested()).isTrue();
     }
 
+    @Test
+    @DisplayName("应能正确处理泛型字段")
+    void shouldHandleGenericFields() {
+        List<FieldMeta> metas = ClassAnalyzer.analyze(Result.class);
+
+        FieldMeta listMeta = metas.stream()
+                .filter(meta -> "data".equals(meta.getField().getName()))
+                .findFirst()
+                .orElse(null);
+        assertThat(listMeta).isNotNull();
+        assertThat(listMeta.isNested()).isTrue();
+    }
+
     // 测试用例类
     public static class TestBeanWithAnnotations {
         @MaskingField(typeHandler = KeepFirstAndLastHandler.class)
@@ -170,6 +183,12 @@ public class ClassAnalyzerTest {
     public static class TestBeanWithoutAnnotations {
         private String normalField;
         private List<String> nestedField;
+    }
+
+    public static class Result<T> {
+        private String code;
+        private String message;
+        private T data;
     }
 
 }

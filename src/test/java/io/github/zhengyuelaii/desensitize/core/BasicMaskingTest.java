@@ -113,6 +113,20 @@ public class BasicMaskingTest {
         assertThat(data.getSalary()).isEqualTo("******");
     }
 
+    @Test
+    @DisplayName("应能处理MaskingHandler存在多余处理器情况")
+    public void shouldHandleExtraHandlers() {
+        Person data = new Person("张三", "13800000000", "420000000000000000");
+        // 脱敏处理器
+        Map<String, MaskingHandler> handlerMap = new HashMap<>();
+        handlerMap.put("test_0", fixMaskHandler);
+        handlerMap.put("test_1", fixMaskHandler);
+        handlerMap.put("test_3", fixMaskHandler);
+        // 执行脱敏
+        EasyDesensitize.mask(data, handlerMap);
+        assertThat(data.getName()).isEqualTo("张*");
+    }
+
     public static class MobileMaskingHandler implements MaskingHandler {
         @Override
         public String getMaskingValue(String value) {
