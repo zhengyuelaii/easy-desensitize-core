@@ -2,9 +2,15 @@
 
 # Easy Desensitize Core
 
-> 🚀 **轻量级、高性能、高扩展性的 Java 数据脱敏引擎核心库**
+![Build Status](https://github.com/zhengyuelaii/easy-desensitize-core/actions/workflows/main.yml/badge.svg)
+![Maven Central](https://img.shields.io/maven-central/v/io.github.zhengyuelaii/easy-desensitize-core.svg)
+![License](https://img.shields.io/badge/license-Apache%202.0-blue)
+
+🚀 **轻量级、高性能、高扩展性的 Java 数据脱敏引擎核心库**
 
 `easy-desensitize-core` 是一个专注于数据脱敏核心逻辑的工具库。它不仅支持基于注解的声明式脱敏，还提供了强大的编程式 API，能够完美处理**复杂嵌套对象**、**泛型容器**（如 `List<T>`, `Map<K,V>`）以及**动态结构**的数据脱敏。
+
+> 对于 Spring Boot 用户，可以查看 [easy-desensitize-spring-boot-starter](https://github.com/zhengyuelaii/easy-desensitize-spring-boot-starter) 以获得自动集成支持。
 
 ## ✨ 核心特性
 
