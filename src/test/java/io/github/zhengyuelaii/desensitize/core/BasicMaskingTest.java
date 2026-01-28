@@ -31,7 +31,7 @@ public class BasicMaskingTest {
 
     @BeforeEach
     void setUp() {
-        fixMaskHandler = new KeepFirstAndLastHandler();
+        fixMaskHandler = new FixedMaskHandler();
     }
 
     @Test
@@ -83,15 +83,15 @@ public class BasicMaskingTest {
     }
 
     @Test
-    @DisplayName("字段注解的脱敏规则应优先生效")
-    public void shouldPreferAnnotationRules() {
+    @DisplayName("字段注解的脱敏规则应能被覆盖")
+    public void shouldOverrideAnnotationRules() {
         Person data = new Person("张三", "13800000000", "420000000000000000");
         // 脱敏处理器
         Map<String, MaskingHandler> handlerMap = new HashMap<>();
         handlerMap.put("name", fixMaskHandler);
         // 执行脱敏
         EasyDesensitize.mask(data, handlerMap);
-        assertThat(data.getName()).isEqualTo("张*");
+        assertThat(data.getName()).isEqualTo("******");
     }
 
     @Test

@@ -250,11 +250,11 @@ public class EasyDesensitize {
                     mask(value, handlerMap, excludeFields, localCache, visited, useGlobalCache);
                 } else if (value instanceof String) {
                     String name = meta.getField().getName(), maskedValue = (String) value;
-                    if (meta.getTypeHandler() != null) {
-                        // 字段注解优先生效?
-                        maskedValue = meta.getTypeHandler().getMaskingValue((String) value);
-                    } else if (handlerMap != null && handlerMap.containsKey(name)) {
+                    // 逻辑：命中配置则脱敏，未命中则使用字段类型处理器
+                    if (handlerMap != null && handlerMap.containsKey(name)) {
                         maskedValue = handlerMap.get(name).getMaskingValue((String) value);
+                    } else if (meta.getTypeHandler() != null) {
+                        maskedValue = meta.getTypeHandler().getMaskingValue((String) value);
                     }
                     if (!Objects.equals(value, maskedValue)) {
                         meta.getField().set(data, maskedValue);
