@@ -1,13 +1,12 @@
 package io.github.zhengyuelaii.desensitize.core;
 
-import java.lang.ref.SoftReference;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-
 import io.github.zhengyuelaii.desensitize.core.handler.MaskingHandler;
 import io.github.zhengyuelaii.desensitize.core.util.ClassAnalyzer;
 import io.github.zhengyuelaii.desensitize.core.util.FieldMeta;
 import io.github.zhengyuelaii.desensitize.core.util.MaskingDataResolver;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 数据脱敏核心处理类
@@ -25,7 +24,7 @@ public class EasyDesensitize {
     /**
      * 全局软引用缓存（二级缓存）
      */
-    private static final Map<Class<?>, SoftReference<List<FieldMeta>>> GLOBAL_CACHE = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, List<FieldMeta>> GLOBAL_CACHE = new ConcurrentHashMap<>();
 
     /**
      * 清空全局缓存
@@ -276,13 +275,12 @@ public class EasyDesensitize {
 
         // 局部缓存未命中并且开启全局缓存，从全局缓存中获取
         if (metas == null && useGlobalCache) {
-            SoftReference<List<FieldMeta>> softRef = GLOBAL_CACHE.get(clazz);
-            if (softRef != null) {
-                metas = softRef.get();
-                // 如果全局缓存命中，同步至局部缓存
-                if (metas != null && localCache != null) {
+            metas = GLOBAL_CACHE.get(clazz);
+            if (metas != null) {
+                if (localCache != null) {
                     localCache.put(clazz, metas);
                 }
+                return metas;
             }
         }
 
@@ -293,7 +291,7 @@ public class EasyDesensitize {
                 localCache.put(clazz, metas);
             }
             if (useGlobalCache) {
-                GLOBAL_CACHE.put(clazz, new SoftReference<List<FieldMeta>>(metas));
+                GLOBAL_CACHE.put(clazz, metas);
             }
         }
 
