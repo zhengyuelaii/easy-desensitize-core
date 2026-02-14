@@ -1,6 +1,6 @@
 
 
-**# Easy Desensitize Core
+# Easy Desensitize Core
 
 ![Build Status](https://github.com/zhengyuelaii/easy-desensitize-core/actions/workflows/main.yml/badge.svg)
 ![Maven Central](https://img.shields.io/maven-central/v/io.github.zhengyuelaii/easy-desensitize-core.svg)
