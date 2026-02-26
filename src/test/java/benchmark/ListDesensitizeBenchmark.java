@@ -54,8 +54,6 @@ public class ListDesensitizeBenchmark {
         handlers = new HashMap<>();
         handlers.put("mobile", value -> Masker.hide(value, 3, 7));
         handlers.put("idCard", value -> Masker.hide(value, 1, value.length() - 2));
-        // 预解析类结构，确保测试的纯执行性能
-        ClassAnalyzer.analyze(User.class);
     }
 
     private static User getUser(int i) {
