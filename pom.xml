@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.github.zhengyuelaii</groupId>
     <artifactId>easy-desensitize-core</artifactId>
-    <version>0.2.0</version>
+    <version>1.0.0</version>
     <name>easy-desensitize-core</name>
     <description>A lightweight, extensible Java data masking framework based on annotations and handlers ｜
         一个轻量、可扩展、基于注解与处理器的数据脱敏框架
