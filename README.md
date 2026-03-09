@@ -199,7 +199,7 @@ public class TreeTypeDesensitize {
 }
 ```
 
-### 1. 编程式脱敏（无侵入）
+### 2. 编程式脱敏（无侵入）
 
 适用于**无法修改源码**（如第三方 SDK 的类）或需要根据业务逻辑**动态改变规则**的场景。
 
@@ -235,7 +235,7 @@ public class ProgrammaDesensitize {
 ```
 > ⚠️ 注意：当 `handlerMap` 中存在与待脱敏对象同名的字段时，会优先使用 `handlerMap` 中定义的处理器
 
-### 2. 处理复杂对象（Resolver）
+### 3. 处理复杂对象（Resolver）
 
 对于 `Page<T>`、`ResultWrapper<T>` 等复杂包装对象，无需编写复杂的反射逻辑，使用 `MaskingDataResolver` 接口即可一键提取。
 
@@ -283,9 +283,9 @@ EasyDesensitize.mask(page, p -> p.getData().iterator());
 
 > **💡 性能提示**：虽然框架具备自动扫描结构的能力，但对于已知结构的复杂对象，通过 `Resolver` 显式指定数据路径可大幅减少反射扫描，提升处理性能。
 
-### 3. 全局缓存控制
+### 4. 全局缓存控制
 
-框架默认开启基于 `SoftReference` 的全局缓存以提升性能。在内存极其敏感或动态类加载场景下，可手动关闭：
+框架默认开启全局缓存以提升性能。在内存极其敏感或动态类加载场景下，可手动关闭：
 
 ```Java
 // 第三个参数 false 表示关闭全局缓存，仅使用单次任务级缓存
@@ -412,4 +412,4 @@ public class MaskerUsageSample {
 
 ## 📄 开源协议
 
-本项目基于 [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) 协议开源。**
+本项目基于 [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) 协议开源。
